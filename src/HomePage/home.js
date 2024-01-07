@@ -14,6 +14,7 @@ const Home = () => {
   const [userListData, updateUserListData] = useState([]);
   const [isFormValid, updateIsFormValid] = useState(false);
   const [payloadSearch, updatePayloadSearch] = useState("");
+  const [isMobileDevice, updateIsMobileDevice] = useState(false);
   const _ = require('lodash');
   const [payload, updatePayload] = useState({
     rating: "",
@@ -51,6 +52,7 @@ const Home = () => {
   useEffect(() => {
     userListDataFunc();
     chipListFunc();
+    checkMobileDevice();
   }, [])
 
   const fetchDetailFunc = (pk) => {
@@ -60,6 +62,12 @@ const Home = () => {
 
   const addReviewModalFunc = () => {
     addReviewModalUpdate(!addReviewModal);
+    // if (!addReviewModal) {
+    //   disableBodyScroll();
+    // }
+    // else {
+    //   enableBodyScroll();
+    // }
   }
 
   const addReviewSubmitHandler = (event) => {
@@ -132,6 +140,26 @@ const Home = () => {
     updateUserListData(data?.data);
   }, 500)).current;
 
+  // // Function to disable body scroll
+  // const disableBodyScroll = () => {
+  //   document.body.style.overflow = 'hidden';
+  // };
+
+  // // Function to enable body scroll
+  // const enableBodyScroll = () => {
+  //   document.body.style.overflow = ''; // Set back to default (allow scrolling)
+  // };
+
+  const checkMobileDevice = () => {
+    const isMobile = window.matchMedia('(max-width: 473px)').matches;
+
+    if (isMobile) {
+      updateIsMobileDevice(true);
+    } else {
+      updateIsMobileDevice(false);
+    }
+  }
+
   return <div div className="container" >
     {
       <div>
@@ -187,9 +215,11 @@ const Home = () => {
               </div>
               :
               <div>
-                <div className="noUserSelect"> Please select a name from the left menu </div>
+                <div className="noUserSelect"> Please select a name from the {isMobileDevice ? "above" : "left"} menu </div>
                 <div className="leftIcon">
-                  <i className="fa fa-arrow-left" aria-hidden="true"></i>
+                  {isMobileDevice ?
+                    <i className="fa fa-arrow-up" aria-hidden="true"></i> :
+                    <i className="fa fa-arrow-left" aria-hidden="true"></i>}
                 </div>
               </div>
             }
