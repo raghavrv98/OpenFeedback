@@ -9,6 +9,12 @@
   cursor: pointer;
 }
 
+.noDataUser {
+  font-size: 30px;
+  display: flex;
+  justify-content: center;
+}
+
 .card:hover {
   box-shadow: 0px 0px 10px 5px grey;
 }
@@ -275,7 +281,7 @@ form .chip:hover {
   cursor: pointer;
 }
 
-.commentDate{
+.commentDate {
   color: gray;
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./home.css";
 import axios from 'axios';
 import moment from 'moment';
@@ -13,6 +13,8 @@ const Home = () => {
   const [addReviewModal, addReviewModalUpdate] = useState(false);
   const [userListData, updateUserListData] = useState([]);
   const [isFormValid, updateIsFormValid] = useState(false);
+  const [payloadSearch, updatePayloadSearch] = useState("");
+  const _ = require('lodash');
   const [payload, updatePayload] = useState({
     rating: "",
     chips: [],
@@ -77,7 +79,6 @@ const Home = () => {
     addReviewModalUpdate(false);
     axios.patch(url, commentList)
       .then((res) => {
-        alert(res?.data?.msg)
         updateCommentListLoading(false);
         addReviewModalUpdate(false);
         updatePayload({
@@ -115,6 +116,22 @@ const Home = () => {
     })
   }
 
+  const searchHandler = async (event) => {
+    const value = event.target.value;
+    if (value.length > 0 && value.trim()?.length === 0) return;
+    updatePayloadSearch(value);
+    debouncedFunction(value);
+  }
+
+  const debouncedFunction = useRef(_.debounce(async (value) => {
+    updateUserListLoading(true);
+    const url = `${window.API_URL}/users/${value}`;
+    const response = await fetch(url);
+    let data = await response.json();
+    updateUserListLoading(false);
+    updateUserListData(data?.data);
+  }, 500)).current;
+
   return <div div className="container" >
     {
       <div>
@@ -123,10 +140,10 @@ const Home = () => {
           <div className="nameCol">
             <div className="scrollView">
               <div className="nameSearch">
-                <input placeholder="Enter name for search" />
+                <input value={payloadSearch} onChange={searchHandler} placeholder="Enter name for search" />
               </div>
               {userListLoading ? <div className="loader"></div> : <div>
-                {userListData?.map(val =>
+                {userListData.length > 0 ? userListData?.map(val =>
                   <div key={val?.pk} className="nameInfo" onClick={() => fetchDetailFunc(val?.pk)}>
                     <div>
                       <img className="userProfilePic" alt="" src={`https://robohash.org/${val.name}`} />
@@ -136,7 +153,8 @@ const Home = () => {
                       <p className="listDesingation">({val?.designation})</p>
                     </div>
                   </div>
-                )}
+                ) : <p className="noDataUser">No Data Available</p>
+                }
               </div>
               }
             </div>
@@ -197,7 +215,6 @@ const Home = () => {
                   <label for="star1"></label>
                 </div>
                 <div className="chipPartition">
-                  {console.log('payload?.chips: ', payload?.chips)}
                   <div className="chipContainerLeft">
                     {chipList?.positive?.map((val) => <div key={val} onClick={(event) => addReviewValueHandler(event, val, "chips")} className={payload?.chips.length > 0 && payload?.chips.every(item => (chipList?.positive.includes(item) || chipList?.negative.includes(item)) && payload?.chips.includes(val)) ? "chip chipPositive activeChip" : "chip chipPositive"}>{val}</div>)}
                   </div>
