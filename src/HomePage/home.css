@@ -158,6 +158,11 @@ form .chip {
   background-color: #ffadad;
 }
 
+.activeChip {
+  background-color: #9fa79f;
+}
+
+
 form .chip:hover {
   background-color: #9fa79f;
 }
@@ -189,7 +194,7 @@ form .chip:hover {
   color: gray;
 }
 
-.errorMsg{
+.errorMsg {
   color: red;
   font-size: 25px;
 }
@@ -268,6 +273,10 @@ form .chip:hover {
   padding: 12px;
   margin-top: 20px !important;
   cursor: pointer;
+}
+
+.commentDate{
+  color: gray;
 }
 
 .fs-heading {
@@ -349,7 +358,7 @@ form .chip:hover {
 .userProfilePic {
   border: 1px solid black;
   /* padding: 2px; */
-  background-color: #2E054E;
+  background-color: #b45afa;
   height: 50px;
   border-radius: 50%;
   width: 50px;
@@ -372,7 +381,7 @@ form .chip:hover {
   padding-bottom: 10px;
 }
 
-.listDesingation{
+.listDesingation {
   font-size: 20px;
   color: #667681;
 }

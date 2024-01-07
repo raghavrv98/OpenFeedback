@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./home.css";
 import axios from 'axios';
+import moment from 'moment';
 
 const Home = () => {
   const [userListLoading, updateUserListLoading] = useState(false);
@@ -42,7 +43,7 @@ const Home = () => {
     const response = await fetch(url);
     let data = await response.json();
     updateCommentListLoading(false);
-    updateCommentList(data?.data?.comments);
+    updateCommentList(data?.data?.comments?.sort((a, b) => b?.commentId - a?.commentId));
   }
 
   useEffect(() => {
@@ -61,7 +62,6 @@ const Home = () => {
 
   const addReviewSubmitHandler = (event) => {
     event.preventDefault();
-    addReviewModalUpdate(false);
     updateCommentListLoading(true)
     const url = `${window.API_URL}/addComment/${fetchDetail?.pk}`;
 
@@ -74,8 +74,10 @@ const Home = () => {
     }
 
     commentList?.push(payload)
+    addReviewModalUpdate(false);
     axios.patch(url, commentList)
       .then((res) => {
+        alert(res?.data?.msg)
         updateCommentListLoading(false);
         addReviewModalUpdate(false);
         updatePayload({
@@ -83,6 +85,7 @@ const Home = () => {
           chips: [],
           commentId: ""
         });
+        commentListFunc(fetchDetail?.pk);
       })
       .catch((err) => {
         updateCommentListLoading(false)
@@ -107,7 +110,8 @@ const Home = () => {
     updatePayload({
       rating: value,
       chips: chipsArr,
-      commentId: commentList?.length + 1
+      commentId: commentList?.length + 1,
+      date: Date.now()
     })
   }
 
@@ -121,7 +125,7 @@ const Home = () => {
               <div className="nameSearch">
                 <input placeholder="Enter name for search" />
               </div>
-              {userListLoading ? <div class="loader"></div> : <div>
+              {userListLoading ? <div className="loader"></div> : <div>
                 {userListData?.map(val =>
                   <div key={val?.pk} className="nameInfo" onClick={() => fetchDetailFunc(val?.pk)}>
                     <div>
@@ -143,11 +147,11 @@ const Home = () => {
                 <div className="nameHeader">
                   {fetchDetail?.name} ({fetchDetail?.designation})
                 </div>
-                {commentListLoading ? <div class="loader"></div> :
+                {commentListLoading ? <div className="loader"></div> :
                   <div className="nameDetails">
                     <div className="viewPart">
                       {commentList?.length > 0 ? commentList?.map((val) => <div key={val?.commentId} className="commentMsg">
-                        <h5>Comment Id-{val?.commentId}</h5>
+                        <h5>Comment Id-{val?.commentId} <span className="commentDate">({moment(val?.date).format('DD-MMM-YYYY HH:mm:ss')})</span></h5>
                         <p>{val?.rating.length > 0 &&
                           Array(parseInt(val?.rating)).fill(0)?.map((val, index) => <img key={index} className="commentStar" alt="" src={require('./filled-star.png')} />)
                         }</p>
@@ -167,7 +171,7 @@ const Home = () => {
               <div>
                 <div className="noUserSelect"> Please select a name from the left menu </div>
                 <div className="leftIcon">
-                  <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                  <i className="fa fa-arrow-left" aria-hidden="true"></i>
                 </div>
               </div>
             }
@@ -177,7 +181,7 @@ const Home = () => {
           <div className="openFeedbackFormShadow"></div>
           <div className="openFeedbackForm">
             <div className="title">Add Review</div>
-            {addReviewModalLoading ? <div class="loader"></div> :
+            {addReviewModalLoading ? <div className="loader"></div> :
               <form onSubmit={addReviewSubmitHandler}>
                 <button className="closeFeedbackForm" onClick={addReviewModalFunc}>X</button>
                 <div className="rating">
@@ -193,11 +197,12 @@ const Home = () => {
                   <label for="star1"></label>
                 </div>
                 <div className="chipPartition">
+                  {console.log('payload?.chips: ', payload?.chips)}
                   <div className="chipContainerLeft">
-                    {chipList?.positive?.map((val) => <div key={val} onClick={(event) => addReviewValueHandler(event, val, "chips")} className={"chip chipPositive"}>{val}</div>)}
+                    {chipList?.positive?.map((val) => <div key={val} onClick={(event) => addReviewValueHandler(event, val, "chips")} className={payload?.chips.length > 0 && payload?.chips.every(item => (chipList?.positive.includes(item) || chipList?.negative.includes(item)) && payload?.chips.includes(val)) ? "chip chipPositive activeChip" : "chip chipPositive"}>{val}</div>)}
                   </div>
                   <div className="chipContainerRight">
-                    {chipList?.negative?.map((val) => <div key={val} onClick={(event) => addReviewValueHandler(event, val, "chips")} className={"chip chipNegative"}>{val}</div>)}
+                    {chipList?.negative?.map((val) => <div key={val} onClick={(event) => addReviewValueHandler(event, val, "chips")} className={payload?.chips.length > 0 && payload?.chips.every(item => (chipList?.positive.includes(item) || chipList?.negative.includes(item)) && payload?.chips.includes(val)) ? "chip chipNegative activeChip" : "chip chipNegative"}>{val}</div>)}
                   </div>
                 </div>
                 {isFormValid && <p className="errorMsg">Please click either of the options.</p>}
