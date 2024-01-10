@@ -70,6 +70,15 @@ const Home = () => {
     // }
   }
 
+  useEffect(() => {
+    if (fetchDetail?.pk) {
+      const interval = setInterval(() => {
+        commentListFunc(fetchDetail?.pk);
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  });
+
   const addReviewSubmitHandler = (event) => {
     event.preventDefault();
     updateCommentListLoading(true)
