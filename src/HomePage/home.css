@@ -319,6 +319,7 @@ form .chip:hover {
   .dashboardContainer .detailCol {
     position: absolute;
     top: 60%;
+    width: 100%;
   }
 
   .scrollView {
