@@ -40,8 +40,8 @@ const Home = () => {
     updateUserListData(data?.data);
   }
 
-  const commentListFunc = async (pk) => {
-    updateCommentListLoading(true);
+  const commentListFunc = async (pk, stopLoader) => {
+    updateCommentListLoading(stopLoader ? false : true);
     const url = `${window.API_URL}/comments/${pk}`;
     const response = await fetch(url);
     let data = await response.json();
@@ -73,7 +73,8 @@ const Home = () => {
   useEffect(() => {
     if (fetchDetail?.pk) {
       const interval = setInterval(() => {
-        commentListFunc(fetchDetail?.pk);
+        let stopLoader = true;
+        commentListFunc(fetchDetail?.pk, stopLoader);
       }, 10000);
       return () => clearInterval(interval);
     }
