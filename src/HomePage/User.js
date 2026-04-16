@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import moment from "moment";
-import _ from "lodash";
-import { chipListStat, Users } from "./constants";
+import { chipListState, Users } from "./constants";
 import AddReviewModal from "./AddReviewModal";
 import Skeleton from "./Skeleton";
 import Header from "./Header";
@@ -19,12 +18,16 @@ const User = () => {
   const [fetchDetails, setFetchDetails] = useState({});
   const [suggestionText, setSuggestionText] = useState("");
   const [suggestions, setSuggestions] = useState([]);
+  const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [payload, setPayload] = useState({
     rating: "",
     chips: [],
     comment: "",
   });
+
+  const storedData = JSON.parse(localStorage.getItem("data")) || {};
 
   /**
    * LOAD DATA FROM LOCAL STORAGE
@@ -34,8 +37,8 @@ const User = () => {
    *   teammates: []
    * }
    */
+
   useEffect(() => {
-    const storedData = JSON.parse(localStorage.getItem("data")) || {};
     const storedUsers = JSON.parse(localStorage.getItem("users")) || Users;
     const currentUser = storedUsers?.find(
       (val) => val.email === storedData?.email
@@ -47,7 +50,7 @@ const User = () => {
 
     setOriginalUsers(userList);
     setUserListData(userList);
-    setChipList(chipListStat);
+    setChipList(chipListState);
 
     setLoading(false);
     setFetchDetails(fetchDetails);
@@ -187,20 +190,20 @@ const User = () => {
    * SEARCH (DEBOUNCED)
    * Uses originalUsers to avoid losing data
    */
-  const debouncedSearch = useRef(
-    _.debounce((value) => {
-      if (!value) {
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (!searchTerm.trim()) {
         setUserListData(originalUsers);
-        return;
+      } else {
+        const filtered = originalUsers.filter((u) =>
+          u.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setUserListData(filtered);
       }
+    }, 300);
 
-      const filtered = originalUsers.filter((u) =>
-        u.name.toLowerCase().includes(value.toLowerCase())
-      );
-
-      setUserListData(filtered);
-    }, 300)
-  ).current;
+    return () => clearTimeout(handler);
+  }, [searchTerm, originalUsers]);
 
   const handleSuggestionSubmit = () => {
     if (!suggestionText.trim()) return;
@@ -234,51 +237,53 @@ const User = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 p-4">
+    <div className="h-[100vh] p-4 bg-gray-100">
       <Header />
 
       <div className="flex gap-5">
         {/* LEFT PANEL */}
-        <div className="w-1/5 bg-white rounded-2xl shadow-lg flex flex-col h-[85vh]">
+        <div className="w-1/5 bg-white p-4 rounded-xl shadow h-[calc(100vh-150px)] flex flex-col">
           {/* SEARCH */}
-          <div className="p-4 border-b sticky top-0 rounded-t-2xl bg-white z-10">
+          <div className="mb-3">
             <input
-              onChange={(e) => debouncedSearch(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search teammates..."
               className="w-full p-2.5 rounded-xl border focus:ring-2 focus:ring-blue-400 outline-none"
             />
           </div>
 
           {/* USER LIST */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div className="flex-1 overflow-auto">
             {loading ? (
               <Skeleton />
             ) : userListData.length === 0 ? (
-              <p className="flex items-center justify-center h-full text-gray-400 text-lg">
+              <div className="text-center text-gray-400 mt-10">
                 No teammates found
-              </p>
+              </div>
             ) : (
               userListData.map((user) => (
                 <div
                   key={user.id}
                   onClick={() => fetchDetailFunc(user.id)}
-                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition ${
+                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border ${
                     selectedUser?.id === user.id
-                      ? "bg-blue-100 shadow-sm"
-                      : "hover:bg-gray-100"
+                      ? "bg-blue-100 border-blue-300 shadow-sm"
+                      : "bg-white hover:bg-gray-50 border-transparent hover:border-gray-200"
                   }`}
                 >
                   <img
                     src={user.avatar}
                     alt=""
-                    className="w-10 h-10 rounded-full border"
+                    className="w-10 h-10 rounded-full object-cover border"
                   />
 
-                  <div>
-                    <div className="font-semibold">{user.name}</div>
-                    <div className="text-xs text-gray-500">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-gray-800">
+                      {user.name}
+                    </span>
+                    <span className="text-xs text-gray-500">
                       {user.designation}
-                    </div>
+                    </span>
                   </div>
                 </div>
               ))
@@ -287,62 +292,17 @@ const User = () => {
         </div>
 
         {/* RIGHT PANEL */}
-        <div className="flex-1 bg-white rounded-2xl shadow-lg p-6 h-[85vh] overflow-y-auto">
+        <div className="flex-1 bg-white p-4 rounded-2xl shadow-lg h-[calc(100vh-150px)] w-4/5 flex flex-col">
           {!selectedUser && (
-            <div className="space-y-4 mb-4">
-              <div className="text-lg font-semibold">
-                Add Suggestion for Management
-              </div>
-
-              <textarea
-                value={suggestionText}
-                onChange={(e) => setSuggestionText(e.target.value)}
-                placeholder="Write your suggestion here..."
-                className="w-full min-h-[80px] p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-lg font-semibold">My Ratings & Reviews</div>
 
               <button
-                onClick={handleSuggestionSubmit}
+                onClick={() => setIsSuggestionModalOpen(true)}
                 className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600"
               >
-                Submit Suggestion
+                + Add Suggestion
               </button>
-            </div>
-          )}
-
-          {!selectedUser && suggestions.length > 0 && (
-            <div className="space-y-4 mb-6">
-              {suggestions?.length > 0 ? (
-                suggestions.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-2xl border bg-white shadow-sm transition hover:shadow-md"
-                  >
-                    {/* Top Row */}
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs text-gray-400">
-                        {moment(item.date).format("DD MMM YYYY • HH:mm")}
-                      </span>
-                    </div>
-
-                    {/* Content */}
-                    <div className="text-gray-800 text-sm leading-relaxed">
-                      {item.suggestion}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                  <div className="text-4xl mb-2">💡</div>
-                  <div className="italic">No suggestions yet</div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {!selectedUser && (
-            <div className="text-lg font-semibold mb-4">
-              My Ratings & Reviews
             </div>
           )}
           {!selectedUser ? (
@@ -353,7 +313,7 @@ const User = () => {
                 No reviews available
               </div>
             ) : (
-              <div className="space-y-4 overflow-auto h-[50vh]">
+              <div className="space-y-4 overflow-auto h-[74vh]">
                 {fetchDetails?.reviews?.map((c) => (
                   <div
                     key={c.commentId}
@@ -373,7 +333,7 @@ const User = () => {
                     </div>
 
                     {/* CHIPS */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       {[
                         ...(c.chips?.positive || []),
                         ...(c.chips?.negative || []),
@@ -394,7 +354,17 @@ const User = () => {
                         );
                       })}
                     </div>
-                    <div>{c.comment}</div>
+                    <div>
+                      {c.comment ? (
+                        <div className="bg-gray-50 text-sm text-gray-700 leading-relaxed">
+                          Comments : {c.comment}
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 text-xs italic">
+                          No comment provided
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -402,9 +372,9 @@ const User = () => {
           ) : (
             <>
               {/* HEADER */}
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex justify-between items-center mb-5">
                 <div>
-                  <h2 className="text-3xl font-semibold">
+                  <h2 className="text-2xl font-semibold text-gray-800">
                     {selectedUser.name}
                   </h2>
                   <p className="text-gray-500 text-md">
@@ -435,66 +405,132 @@ const User = () => {
                   No reviews yet
                 </div>
               ) : (
-                <div className="space-y-4 overflow-auto h-[74vh]">
-                  {commentList.map((c) => (
-                    <div
-                      key={c.commentId}
-                      className="p-5 rounded-2xl border bg-gray-50 hover:shadow-lg"
-                    >
-                      {/* DATE */}
-                      <div className="text-xs text-gray-400 mb-2">
-                        {moment(c.date).format("DD MMM YYYY • HH:mm")}
-                      </div>
+                <div className="space-y-4 overflow-auto h-[69vh]">
+                  {commentList
+                    .filter((c) => c.reviewBy === storedData.name)
+                    .map((c) => (
+                      <div
+                        key={c.commentId}
+                        className="p-5 rounded-2xl border bg-gray-50 hover:shadow-lg"
+                      >
+                        {/* DATE */}
+                        <div className="text-xs text-gray-400 mb-2">
+                          {moment(c.date).format("DD MMM YYYY • HH:mm")}
+                        </div>
 
-                      {/* STARS */}
-                      <div className="text-yellow-400 text-3xl mb-4">
-                        {"★".repeat(c.rating)}
-                        <span className="text-gray-300">
-                          {"★".repeat(5 - c.rating)}
-                        </span>
-                      </div>
+                        {/* STARS */}
+                        <div className="text-yellow-400 text-3xl mb-4">
+                          {"★".repeat(c.rating)}
+                          <span className="text-gray-300">
+                            {"★".repeat(5 - c.rating)}
+                          </span>
+                        </div>
 
-                      {/* CHIPS */}
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          ...(c.chips?.positive || []),
-                          ...(c.chips?.negative || []),
-                        ].map((chip) => {
-                          const isPositive = chipList?.positive?.includes(chip);
+                        {/* CHIPS */}
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {[
+                            ...(c.chips?.positive || []),
+                            ...(c.chips?.negative || []),
+                          ].map((chip) => {
+                            const isPositive =
+                              chipList?.positive?.includes(chip);
 
-                          return (
-                            <span
-                              key={chip}
-                              className={`px-4 py-2 text-sm rounded-full border ${
-                                isPositive
-                                  ? "bg-green-50 text-green-700"
-                                  : "bg-red-50 text-red-700"
-                              }`}
-                            >
-                              {chip}
-                            </span>
-                          );
-                        })}
+                            return (
+                              <span
+                                key={chip}
+                                className={`px-4 py-2 text-sm rounded-full border ${
+                                  isPositive
+                                    ? "bg-green-50 text-green-700"
+                                    : "bg-red-50 text-red-700"
+                                }`}
+                              >
+                                {chip}
+                              </span>
+                            );
+                          })}
+                        </div>
+
+                        <div>
+                          {c.comment ? (
+                            <div className="bg-gray-50 text-sm text-gray-700 leading-relaxed">
+                              Comments : {c.comment}
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-xs italic">
+                              No comment provided
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div className="mt-4">
-                        {c.comment ? (
-                          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-700 leading-relaxed">
-                            {c.comment}
-                          </div>
-                        ) : (
-                          <div className="text-gray-400 text-xs italic">
-                            No comment provided
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </>
           )}
         </div>
       </div>
+
+      {isSuggestionModalOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* BACKDROP */}
+          <div
+            className="flex-1 bg-black/40"
+            onClick={() => setIsSuggestionModalOpen(false)}
+          />
+
+          {/* SLIDE PANEL */}
+          <div className="w-[500px] h-full bg-white shadow-xl p-5 flex flex-col animate-slideIn">
+            {/* HEADER */}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold">Add your suggestions</h2>
+              <button onClick={() => setIsSuggestionModalOpen(false)}>✕</button>
+            </div>
+
+            {/* INPUT */}
+            <textarea
+              value={suggestionText}
+              onChange={(e) => setSuggestionText(e.target.value)}
+              maxLength={200}
+              placeholder="Write your suggestion here..."
+              className="w-full h-[150px] p-3 border rounded-xl mb-1 resize-none"
+            />
+            <div className="text-xs text-gray-500 text-right mb-3">
+              {suggestionText.length} / 200 characters
+            </div>
+
+            <button
+              onClick={handleSuggestionSubmit}
+              className="bg-blue-500 text-white py-2 rounded-xl mb-4"
+            >
+              Submit
+            </button>
+
+            {/* LIST */}
+            <div className="flex-1 overflow-y-auto space-y-3">
+              <div className="text-lg font-md">My suggestions</div>
+              <div className="h-[60vh] overflow-auto">
+                {suggestions.length > 0 ? (
+                  suggestions.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 border rounded-xl bg-gray-50 mb-4 break-words"
+                    >
+                      <div className="text-xs text-gray-400 mb-1">
+                        {moment(item.date).format("DD MMM YYYY • HH:mm")}
+                      </div>
+                      <div className="text-sm">{item.suggestion}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-400">
+                    No suggestions yet
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL */}
       {addReviewModal && (
@@ -509,6 +545,7 @@ const User = () => {
           addReviewSubmitHandler={addReviewSubmitHandler}
           setAddReviewModal={setAddReviewModal}
           isFormValid={isFormValid}
+          setIsFormValid={setIsFormValid}
         />
       )}
     </div>
